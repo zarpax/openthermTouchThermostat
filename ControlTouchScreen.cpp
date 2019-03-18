@@ -43,23 +43,22 @@ uint16_t palette[] = {ILI9341_BLACK, // 0
 
 void ControlTouchScreen::paintScreen() {
         gfx->fillBuffer(0);
-        gfx->setTransparentColor(0);
-        gfx->commit();
         int x = X_BASE;
         int y = Y_BASE;
         int y2 = y + LINE_HEIGTH;
         int y3 = y2 + LINE_HEIGTH;
         int y4 = y3 + LINE_HEIGTH;
         gfx->setTextAlignment(TEXT_ALIGN_LEFT);
-        gfx->setColor(10);
+        gfx->setColor(15);
         gfx->drawString(120, 160, "Empezamos!");        
         gfx->drawString(x, y, "Temperaturas"); 
         gfx->setColor(15);
         gfx->drawString(x, y2, "Salón  23ºC"); 
-        gfx->setColor(13);
+        gfx->setColor(15);
         gfx->drawString(x, y3, "Balcón 18ºC"); 
         int y5 = y4 + LINE_HEIGTH;
         for(int i = 0; i < 16; i++) {
+          gfx->setColor(i);
           gfx->drawString(x, y5, "COLOR");
           y5 = y5 + LINE_HEIGTH;
         }
