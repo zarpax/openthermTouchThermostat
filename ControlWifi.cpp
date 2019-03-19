@@ -1,92 +1,66 @@
-#include "GestionWifi.h"
-#include "ConfiguracionSistema.h"
+#include "ControlWifi.h"
 
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP);
 
-GestionWifi::GestionWifi(GestionMqtt *mqtt) {
-  gMqtt = mqtt;  
-  wifi = new ESP8266WiFiClass();  
-  wifi->persistent(false);
+ControlWifi::ControlWifi() {  
   ntpUDP.begin(8888);
   timeClient.begin();
   timeClient.setTimeOffset(3600);
 }
 
-void GestionWifi::connectToWifi() {
-  if (wifi->status() != WL_CONNECTED) {
-    unsigned int retries = ConfiguracionSistema::TRIES_RECONNET;
+void ControlWifi::connectToWifi() {
+   ESP8266WiFiMulti WiFiMulti;
+   
+  if (WiFiMulti.run() != WL_CONNECTED) {
+    unsigned int retries = 15; // Add to settings
     unsigned int intento = 0;
 
-    const char ssid[] = "X";
+    const char ssid[] = "XS";
     const char pass[] = "@Juanan07Sofia06Hugo11Jaime08@";
-
-    yield();
-    ESP.wdtFeed();
-    wifi->disconnect();
-    wifi->mode(WIFI_OFF);
-    delay(20);    
-    ESP.wdtFeed();
-    yield();
-        
-    while ((wifi->status() != WL_CONNECTED) && (intento < retries))
+               
+    while ((WiFiMulti.run() != WL_CONNECTED) && (intento < retries))
     { 
-      wifi->mode(WIFI_STA);
-      ESP.wdtFeed();
-      wifi->begin(ssid, pass);
+      WiFi.mode(WIFI_STA);
+      WiFiMulti.addAP("XS", "@Juanan07Sofia06Hugo11Jaime08@");
+      ESP.wdtFeed();      
       yield();
       ESP.wdtFeed();
-      ConfiguracionSistema::myDelay(500);
+      //ConfiguracionSistema::myDelay(500); add to settings
       yield();
       ESP.wdtFeed();
       Serial.print(".");
       intento++;
+      delay(500);
     }
 
-    ConfiguracionSistema::myDelay(500);
+    //ConfiguracionSistema::myDelay(500); Add to settings
     yield();
     ESP.wdtFeed();
-    gMqtt->sendConexionWifi();
     yield();
     ESP.wdtFeed();
-    sendEmail("Conectado Wifi ", "Conectado");
     yield();
     ESP.wdtFeed();
 
-    Serial.println("WIFI status:" + wifi->status());  
+    //Serial.println("WIFI status:" + wifi->status());  
     
-    if (wifi->status() == WL_CONNECTED) {
-      
-      gMqtt->sendConexionWifi();
+    if (WiFiMulti.run() == WL_CONNECTED) {      
       Serial.println("Connected to WIFI");
+      Serial.println(WiFi.localIP());
     } 
-      /**else if (wifi->status() == WL_DISCONNECTED) {
-        ESP.reset();
-      }**/
   } 
 
   yield();
   ESP.wdtFeed();
 }
 
-boolean GestionWifi::isConnected() {
-  return (wifi->status() == WL_CONNECTED);
+boolean ControlWifi::isConnected() {
+  ESP8266WiFiMulti WiFiMulti;
+  boolean status = (WiFiMulti.run() == WL_CONNECTED);
+  return status;
 }
 
-unsigned long GestionWifi::getTimeFromTimeServerOLD()
-{
-  Serial.println("Trying to get new time");
-  //NTPClient timeClient(ntpUDP, "hora.roa.es", timezone*3600);
-  
-  while(!timeClient.update()) {
-    timeClient.forceUpdate();
-  }
-
-  Serial.println("New time!!");
-  return timeClient.getEpochTime();
-}
-
-unsigned long GestionWifi::getTimeFromTimeServer()
+unsigned long ControlWifi::getTimeFromTimeServer()
 {
   unsigned long mi;
   int cb = 0;
@@ -94,7 +68,7 @@ unsigned long GestionWifi::getTimeFromTimeServer()
   
   const char ntpServerName[] = "hora.roa.es";
   
-  wifi->hostByName(ntpServerName, timeServerIP);
+  WiFi.hostByName(ntpServerName, timeServerIP);
   yield();
   
   Serial.println("sending NTP packet...");
@@ -173,93 +147,4 @@ unsigned long GestionWifi::getTimeFromTimeServer()
   epoch += timezone * 3600;  
 
   return epoch;
-}
-
-byte GestionWifi::sendEmail(String strEmailSubject, String strEmailContent) {
-  byte thisByte = 0;
-  byte respCode;
-
-  char server[] = "mail.domosystems.com";
-  
-  if (client.connect(server, 25) == 1) {
-    Serial.println(F("connected"));
-  } else {
-    Serial.println(F("connection failed"));
-    return 0;
-  }
-  if (!this->eRcv()) return 0;
-
-  Serial.println(F("Sending EHLO"));
-  client.println("EHLO www.domosystems.com");
-  if (!this->eRcv()) return 0;
-  Serial.println(F("Sending auth login"));
-  client.println("auth login");
-  if (!this->eRcv()) return 0;
-  Serial.println(F("Sending User"));
-  // Change to your base64, ASCII encoded user
-  client.println("anVhbmFuQGRvbW9zeXN0ZW1zLmNvbQ=="); //<---------User
-  if (!this->eRcv()) return 0;
-  Serial.println(F("Sending Password"));
-  // change to your base64, ASCII encoded password
-  client.println("bWFmaWFzMDI=");//<---------Passw
-  if (!this->eRcv()) return 0;
-  Serial.println(F("Sending From"));
-  // change to your email address (sender)
-  client.println(F("MAIL From: <acuario@domosystems.com>"));
-  if (!this->eRcv()) return 0;
-  // change to recipient address
-  Serial.println(F("Sending To"));
-  client.println(F("RCPT To: <juanan@abmail.es>"));
-  if (!this->eRcv()) return 0;
-  Serial.println(F("Sending DATA"));
-  client.println(F("DATA"));
-  if (!this->eRcv()) return 0;
-  Serial.println(F("Sending email"));
-  // change to recipient address
-  client.println(F("To:  juanan@abmail.es"));
-  // change to your address
-  client.println(F("From: acuario@domosystems.com"));
-  client.println("Subject: " + strEmailSubject + "\r\n");   
-  client.println(strEmailContent);
-
-  client.println(F("."));
-  if (!this->eRcv()) return 0;
-  Serial.println(F("Sending QUIT"));
-  client.println(F("QUIT"));
-  if (!this->eRcv()) return 0;
-  client.stop();
-  Serial.println(F("disconnected"));
-  return 1;
-}
-
-byte GestionWifi::eRcv()
-{
-  byte respCode;
-  byte thisByte;
-  int loopCount = 0;
-
-  while (!client.available()) {
-    delay(1);
-    loopCount++;
-    // if nothing received for 10 seconds, timeout
-    if (loopCount > 10000) {
-      client.stop();
-      Serial.println(F("\r\nTimeout"));
-      return 0;
-    }
-  }
-
-  respCode = client.peek();
-  while (client.available())
-  {
-    thisByte = client.read();
-    Serial.write(thisByte);
-  }
-
-  if (respCode >= '4')
-  {
-    //  efail();
-    return 0;
-  }
-  return 1;  
 }

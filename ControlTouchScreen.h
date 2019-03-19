@@ -6,11 +6,12 @@
 #include "MiniGrafx.h" // General graphic library
 #include "ILI9341_SPI.h" // Hardware-specific library
 #include <FS.h>
-
+#include "ControlOT.h"
 
 
 class ControlTouchScreen {  
   private:
+      ControlOT *controlOT;
       ILI9341_SPI *tft;
       MiniGrafx *gfx;
       XPT2046_Touchscreen *ts;
@@ -22,8 +23,10 @@ class ControlTouchScreen {
       int Y_BASE = 0;
       int LINE_HEIGTH = 15;  
       int BITS_PER_PIXEL = 4; 
+
+      void paintPalette(int startX, int startY);
   public:
-      ControlTouchScreen();
+      ControlTouchScreen(ControlOT *controlOT, uint16_t palette[]);
       void paintScreen();
 };
 
