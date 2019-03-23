@@ -198,3 +198,7 @@ NodeInfo ControlOT::createNodeInfo(int id, String name, int temp, int humidity) 
 
   return node;
 }
+
+float ControlOT::getMediumTemp() {
+  return (nodes.nodes[0].temp + nodes.nodes[3].temp) / 2;
+}

@@ -2,8 +2,6 @@
 #define GWIFI_H
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiMulti.h>
-#include <WiFiUdp.h>
-#include <NTPClient.h>
 
 class ControlWifi {
   private:
@@ -21,6 +19,6 @@ class ControlWifi {
     void connectToWifi();
     
     boolean isConnected();
-    unsigned long getTimeFromTimeServer();
+    int8_t getWifiQuality();
 };
 #endif

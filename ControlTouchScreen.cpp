@@ -7,23 +7,7 @@
 #define TOUCH_IRQ D4
 
 ControlTouchScreen::ControlTouchScreen(ControlOT *controlOT, uint16_t palette[]) {
-/*uint16_t palette[] = {ILI9341_BLACK, // 0
-                      ILI9341_WHITE, // 1
-                      ILI9341_NAVY, // 2
-                      ILI9341_DARKCYAN, // 3
-                      ILI9341_DARKGREEN, // 4
-                      ILI9341_MAROON, // 5
-                      ILI9341_PURPLE, // 6
-                      ILI9341_OLIVE, // 7
-                      ILI9341_LIGHTGREY, // 8
-                      ILI9341_DARKGREY, // 9
-                      ILI9341_BLUE, // 10
-                      ILI9341_GREEN, // 11
-                      ILI9341_CYAN, // 12
-                      ILI9341_RED, // 13
-                      ILI9341_MAGENTA, // 14
-                      ILI9341_YELLOW}; // 15  */
-
+  this->dstAdjusted = new simpleDSTadjust(StartRule, EndRule);
   this->controlOT = controlOT;                       
   this->tft = new ILI9341_SPI(TFT_CS, TFT_DC);
   this->gfx = new MiniGrafx(tft, BITS_PER_PIXEL, palette);
@@ -42,6 +26,15 @@ ControlTouchScreen::ControlTouchScreen(ControlOT *controlOT, uint16_t palette[])
   gfx->commit();  
 }
 
+void ControlTouchScreen::fillBuffer() {
+  gfx->fillBuffer(0);
+  
+}
+
+void ControlTouchScreen::commit() {
+  gfx->commit();
+}
+
 void ControlTouchScreen::paintPalette(int startX, int startY) {
         int y = startY + LINE_HEIGTH;
         for(int i = 0; i < 16; i++) {
@@ -51,14 +44,15 @@ void ControlTouchScreen::paintPalette(int startX, int startY) {
         }  
 }
 
-void ControlTouchScreen::paintScreen() {
-        gfx->fillBuffer(0);
+void ControlTouchScreen::paintScreen(int8_t wifiQuality, float temperature, bool isHotWaterEnabled, bool isFlameOn) {
+        drawWifiQuality(wifiQuality);
+        
         int x = X_BASE;
         int y = Y_BASE;
         
         gfx->setTextAlignment(TEXT_ALIGN_LEFT);
         gfx->setColor(15);
-        gfx->drawString(x, y, "Temperaturas"); 
+        //gfx->drawString(x, y, "Temperaturas"); 
         Nodes nodes = controlOT->getTemps();
         int y2 = y + LINE_HEIGTH;
         
@@ -71,10 +65,62 @@ void ControlTouchScreen::paintScreen() {
           y2 = y2 + LINE_HEIGTH;
         }
 
-        gfx->commit();  
+        gfx->drawString(x, y2, "Agua Caliente " + String(isHotWaterEnabled? "On" : "Off"));
+        y2 = y2 + LINE_HEIGTH;
+        gfx->drawString(x, y2, "Llama Encendida " + String(isFlameOn? "On" : "Off"));
+        y2 = y2 + LINE_HEIGTH;
+        gfx->drawString(x, y2, "Temperatura " + String(temperature));
 }
 
 void ControlTouchScreen::calibrationCallback(int16_t x, int16_t y) {
   gfx->setColor(1);
   gfx->fillCircle(x, y, 10);
+}
+
+void ControlTouchScreen::drawTime() {
+  
+  char time_str[11];
+  char *dstAbbrev;
+  time_t now = dstAdjusted->time(&dstAbbrev);
+  struct tm * timeinfo = localtime (&now);
+
+  gfx->setTextAlignment(TEXT_ALIGN_CENTER);
+  gfx->setFont(ArialRoundedMTBold_14);
+  gfx->setColor(ILI9341_WHITE);
+  String date = WDAY_NAMES[timeinfo->tm_wday] + " " + MONTH_NAMES[timeinfo->tm_mon] + " " + String(timeinfo->tm_mday) + " " + String(1900 + timeinfo->tm_year);
+  gfx->drawString(120, 6, date);
+
+  gfx->setFont(ArialRoundedMTBold_36);
+
+  if (IS_STYLE_12HR) {
+    int hour = (timeinfo->tm_hour+11)%12+1;  // take care of noon and midnight
+    sprintf(time_str, "%2d:%02d:%02d\n",hour, timeinfo->tm_min, timeinfo->tm_sec);
+  } else {
+    sprintf(time_str, "%02d:%02d:%02d\n",timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+  }
+  gfx->drawString(120, 20, time_str);
+
+  gfx->setTextAlignment(TEXT_ALIGN_LEFT);
+  gfx->setFont(ArialMT_Plain_10);
+  gfx->setColor(ILI9341_BLUE);
+  if (IS_STYLE_12HR) {
+    sprintf(time_str, "%s\n%s", dstAbbrev, timeinfo->tm_hour>=12?"PM":"AM");
+  } else {
+    sprintf(time_str, "%s", dstAbbrev);
+  }
+  gfx->drawString(195, 27, time_str);  // Known bug: Cuts off 4th character of timezone abbreviation
+  gfx->commit();
+}
+
+void ControlTouchScreen::drawWifiQuality(int8_t quality) {
+  gfx->setColor(ILI9341_WHITE);
+  gfx->setTextAlignment(TEXT_ALIGN_RIGHT);  
+  gfx->drawString(228, 9, String(quality) + "%");
+  for (int8_t i = 0; i < 4; i++) {
+    for (int8_t j = 0; j < 2 * (i + 1); j++) {
+      if (quality > i * 25 || j == 0) {
+        gfx->setPixel(230 + 2 * i, 18 - j);
+      }
+    }
+  }
 }
