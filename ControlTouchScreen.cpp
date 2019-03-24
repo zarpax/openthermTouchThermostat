@@ -2,7 +2,7 @@
 
 #define TFT_DC D2
 #define TFT_CS D1
-#define TFT_LED D8
+//#define TFT_LED A0
 #define TOUCH_CS D3
 #define TOUCH_IRQ D4
 
@@ -17,8 +17,8 @@ ControlTouchScreen::ControlTouchScreen(ControlOT *controlOT, uint16_t palette[])
   //this->calibration = calibrationCallback;
 
   // Turn on the background LED
-  pinMode(TFT_LED, OUTPUT);
-  digitalWrite(TFT_LED, HIGH);
+  //pinMode(TFT_LED, OUTPUT);
+  //digitalWrite(TFT_LED, HIGH);
 
   ts->begin();
   gfx->init();

@@ -39,9 +39,12 @@ bool isLastHotWaterEnabled = false;
 bool isLastFlameOn = false;
 float lastTemperature = 0;
 
-const int inPin = 3; // ESP RX
+#define OPENTHERM_IN D0
+#define OPENTHERM_OUT D8
+const int inPin = 2; // ESP RX
 const int outPin = 1; // ESP TX
-OpenTherm ot(inPin, outPin);
+//OpenTherm ot(inPin, outPin);
+OpenTherm ot(OPENTHERM_IN, OPENTHERM_OUT);
 
 ControlOT* controlOT;
 ControlWifi* controlWifi;

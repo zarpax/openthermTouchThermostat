@@ -10,13 +10,13 @@ void ControlWifi::connectToWifi() {
     unsigned int retries = 15; // Add to settings
     unsigned int intento = 0;
 
-    const char ssid[] = "XS";
+    const char ssid[] = "X";
     const char pass[] = "@Juanan07Sofia06Hugo11Jaime08@";
                
     while ((WiFiMulti.run() != WL_CONNECTED) && (intento < retries))
     { 
       WiFi.mode(WIFI_STA);
-      WiFiMulti.addAP("XS", "@Juanan07Sofia06Hugo11Jaime08@");
+      WiFiMulti.addAP(ssid, pass);
       ESP.wdtFeed();      
       yield();
       ESP.wdtFeed();
