@@ -161,26 +161,37 @@ float pid(float sp, float pv, float pv_last, float& ierr, float dt) {
 }
 
 void sendMqttOpenTherm() {
+  Serial.println("sendMqttOpenTherm");
   unsigned long response = ot.setBoilerStatus(enableCentralHeating, enableHotWater, enableCooling);
+  
+  OpenThermResponseStatus responseStatus = ot.getLastResponseStatus();
+  if (responseStatus != OpenThermResponseStatus::SUCCESS) {
+    Serial.println("Error: Invalid boiler response " + String(response, HEX));
+  }     
+  
   float temperature = ot.getTemperature(response);
   bool isHotWaterEnabled = ot.isHotWaterEnabled(response);
   bool isFlameOn = ot.isFlameOn(response);
 
   if (temperature != lastTemperature) {
+    Serial.println("Setting temperature to " + String(temperature));
     // Send mqtt
     lastTemperature = temperature;
   }
 
   if (isHotWaterEnabled != isLastHotWaterEnabled) {
+    Serial.println("Setting isHotWaterEnabled to " + String(isHotWaterEnabled? "On" : "Off"));
     // Send mqtt
     isLastHotWaterEnabled = isHotWaterEnabled;
   }
 
   if (isFlameOn != isLastFlameOn) {
+    Serial.println("Setting isFlameOn to " + String(isFlameOn? "On" : "Off"));
     // Send mqtt
     isLastFlameOn = isFlameOn;
   }
-  
+
+  Serial.println("end sendMqttOpenTherm");
 }
 
 void setBoilerTemp() {
